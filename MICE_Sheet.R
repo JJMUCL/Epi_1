@@ -1,9 +1,8 @@
 library(mice)
 library(naniar)
 library(tidyverse)
-MI_Df <- read.table("c:\\Users\\JohnM\\Documents\\MRC DTP\\Analysis_2 Local\\df_MI_09_05.tab")
-MI_Df <- subset(MI_Df, select= -c(disability_10))
-MI_Df <- MI_Df[,-1]  
+df <- read.table("c:\\Users\\JohnM\\Documents\\MRC DTP\\Analysis_2 Local\\df_MI_09_05.tab")
+MI_Df <- subset(df, select= -c(disability_10, ID, Count_Sport_High))
 ##Specify var class before MICE##
 MI_Df$Sex.x <- factor(MI_Df$Sex.x)
 MI_Df$sport_10 <- factor(
@@ -52,16 +51,16 @@ MI_Df$composite_z2 <- as.numeric(MI_Df$composite_z2)
 map(MI_Df, class)
 
 ##Examine Missingness
-stripplot(MI_Df)
+gg_miss_var(MI_Df)
 vis_miss(MI_Df)
 
-
 ##MICE
-Imputed_DF <- mice(data=MI_Df, m=60, maxit=5, seed=12345)
+Imputed_DF <- mice(data=MI_Df, m=5, maxit=60, seed=12345)
 
-ID <- MI_Df$ID
-temp <- subset(MI_Df, select=c(as.factor(SportsTrichotomy46), as.factor(Sportstrichotomous42), as.factor(Sports_16), as.factor(sport_10), as.factor(Closed_Skill_Tri46), as.factor(Closed_Skill_Tri42), as.factor(Closed_Skill_Tri16), as.factor(Count_Sport_High)))
-names(temp) <- c("SportsTrichotomy46M", "Sportstrichotomous42M", "Sports_16M", "sport_10M", "Closed_Skill_Tri46M", "Closed_Skill_Tri42M", "Closed_Skill_Tri16M", "Count_Sport_HighM")
+MI_Df$ID <- df$ID
+MI_Df$Count_Sport_High <- factor(df$Count_Sport_High, ordered=FALSE)
+temp <- subset(MI_Df, select=c(ID, SportsTrichotomy46, Sportstrichotomous42, Sports_16, sport_10, Closed_Skill_Tri46, Closed_Skill_Tri42, Closed_Skill_Tri16, Count_Sport_High))
+names(temp) <- c("ID", "SportsTrichotomy46M", "Sportstrichotomous42M", "Sports_16M", "sport_10M", "Closed_Skill_Tri46M", "Closed_Skill_Tri42M", "Closed_Skill_Tri16M", "Count_Sport_HighM")
 d2 <- complete(Imputed_DF,'long', include = T) # imputed datasets in long format (including the original)
 d3 <- cbind(ID, d2)
 d3 <- cbind(temp, d3) # as datasets are ordered simply cbind `id`
@@ -69,22 +68,25 @@ m2 <- as.mids(d3) # and transform back to mids object
 #exploring imputed df requires following rubins rules#
 #bmi_mean <- with(m2, lm(BMI.x~1))
 #summary(pool(bmi_mean))
-
 ##Modelling Additive Model# Executive Function#
+
+head(m2)
+head(m2$imp$RHR$`59`)
+
 source("C:/Users/JohnM/Documents/Epi_1/Table_Builder.R")
-reg_proxdist_high_Sex <- with(m2, lm(executive_z2 ~ as.factor(Count_Sport_HighM) + Sex.x))
-reg_proxdist_high_childhood <- with(m2, lm(executive_z2 ~ as.factor(Count_Sport_HighM) + Sex.x + g5 + SEC_102 + Admissions + Education))
-reg_proxdist_high_adulthealth <- with(m2, lm(executive_z2 ~ as.factor(Count_Sport_High) + Sex.x + g5 + SEC_102 + Admissions + Education + nonHDLratio + BMI.x + B10HBA1C + BP))
-reg_proxdist_high_adulthealthbehaviour <- with(m2, lm(executive_z2 ~ as.factor(Count_Sport_High) + Sex.x + g5 + SEC_102 + Admissions + Education + Smoker.x + AlcRisk.x))
-reg_proxdist_high_RHR <- with(m2, lm(executive_z2 ~ as.factor(Count_Sport_High) + Sex.x + g5 + SEC_102 + Admissions + Education + RHR))
-reg_proxdist_high_full <- with(m2, lm(executive_z2 ~ as.factor(Count_Sport_High) + Sex.x + Smoker.x + AlcRisk.x + nonHDLratio + B10HBA1C + g5 + SEC_102 + Admissions + BP + BMI.x + RHR + Education))
+reg_proxdist_high_Sex <- with(m2, lm(executive_z2 ~ Count_Sport_HighM + Sex.x))
+reg_proxdist_high_childhood <- with(m2, lm(executive_z2 ~ Count_Sport_HighM + Sex.x + g5 + SEC_102 + Admissions + Education))
+reg_proxdist_high_adulthealth <- with(m2, lm(executive_z2 ~ Count_Sport_HighM + Sex.x + g5 + SEC_102 + Admissions + Education + nonHDLratio + BMI.x + B10HBA1C + BP))
+reg_proxdist_high_adulthealthbehaviour <- with(m2, lm(executive_z2 ~ Count_Sport_HighM + Sex.x + g5 + SEC_102 + Admissions + Education + Smoker.x + AlcRisk.x))
+reg_proxdist_high_RHR <- with(m2, lm(executive_z2 ~ Count_Sport_HighM + Sex.x + g5 + SEC_102 + Admissions + Education + RHR))
+reg_proxdist_high_full <- with(m2, lm(executive_z2 ~ Count_Sport_HighM + Sex.x + Smoker.x + AlcRisk.x + nonHDLratio + B10HBA1C + g5 + SEC_102 + Admissions + BP + BMI.x + RHR + Education))
 table_sex_adj <-  Mice_output(reg_proxdist_high_Sex)
 table_childhood_adj <-  Mice_output(reg_proxdist_high_childhood)
 table_adulthood_adj <-  Mice_output(reg_proxdist_high_adulthealth)
 table_healthbehav_adj <-  Mice_output(reg_proxdist_high_adulthealthbehaviour)
 table_RHR_adj <-  Mice_output(reg_proxdist_high_RHR)
 table_full_adj <-  Mice_output(reg_proxdist_high_full)
-table_sex
+table_sex_adj
 write.csv(table_childhood_adj, "C:/Users/JohnM/Downloads/proximity_tableschildhood_11_05.csv")
 write.csv(table_adulthood_adj, "C:/Users/JohnM/Downloads/proximity_tablesadulthood_11_05.csv")
 write.csv(table_healthbehav_adj, "C:/Users/JohnM/Downloads/proximity_tableshealthbehav_11_05.csv")
