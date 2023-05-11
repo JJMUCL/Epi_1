@@ -55,7 +55,7 @@ gg_miss_var(MI_Df)
 vis_miss(MI_Df)
 
 ##MICE
-Imputed_DF <- mice(data=MI_Df, m=5, maxit=60, seed=12345)
+Imputed_DF <- mice(data=MI_Df, m=60, maxit=5, seed=12345)
 
 MI_Df$ID <- df$ID
 MI_Df$Count_Sport_High <- factor(df$Count_Sport_High, ordered=FALSE)
@@ -138,12 +138,21 @@ write.csv(table_sex_adj, "C:/Users/JohnM/Downloads/proximity_tablesSex_11_compos
 
 ##----End of proximal-distal----##
 
-
 ##Sensitive Period
 reg_10_Sex <- with(m2, lm(executive_z2 ~ factor(sport_10M) + Sex.x))
 reg_10_childhood <- with(m2, lm(executive_z2 ~ sport_10M + Sex.x + g5 + SEC_102 + Admissions + Education))
-
 table_reg_10_Sex <-  Mice_output(reg_10_Sex)
 table_reg_10_Sex 
+
+reg_16_Sex <- with(m2, lm(executive_z2 ~ factor(Sports_16M) + Sex.x))
+reg_16_childhood <- with(m2, lm(executive_z2 ~ Sports_16M + Sex.x + g5 + SEC_102 + Admissions + Education))
+table_reg_16_Sex <-  Mice_output(reg_16_Sex)
+table_reg_16_Childhood <-  Mice_output(reg_16_childhood)
+table_reg_16_Childhood 
+
+
+reg_16_Full <- with(m2, lm(composite_z2 ~ Sports_16M + Sex.x + Smoker.x + AlcRisk.x + nonHDLratio + B10HBA1C + g5 + SEC_102 + Admissions + BP + BMI.x + RHR + Education))
+table_reg_16_Full <-  Mice_output(reg_16_Full)
+
 
 
